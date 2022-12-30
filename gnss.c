@@ -20,7 +20,7 @@ struct cxd56_gnss_dms_s {
   uint32_t frac;
 };
 
-static uint32_t                         posfixflag;
+static uint32_t posfixflag;
 static struct cxd56_gnss_positiondata_s posdat;
 
 static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf) {
@@ -45,24 +45,7 @@ static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf) {
   dmf->frac   = f;
 }
 
-/****************************************************************************
- * Name: read_and_print()
- *
- * Description:
- *   Read and print POS data.
- *
- * Input Parameters:
- *   fd - File descriptor.
- *
- * Returned Value:
- *   Zero (OK) on success; Negative value on error.
- *
- * Assumptions/Limitations:
- *   none.
- *
- ****************************************************************************/
-
-static int read_and_print(int fd){
+static int read_and_print(int f){
   int ret;
   struct cxd56_gnss_dms_s dmf;
 
@@ -85,108 +68,38 @@ static int read_and_print(int fd){
     printf(">No Positioning Data\n");
 }
 
-/****************************************************************************
- * Name: gnss_setparams()
- *
- * Description:
- *   Set gnss parameters use ioctl.
- *
- * Input Parameters:
- *   fd - File descriptor.
- *
- * Returned Value:
- *   Zero (OK) on success; Negative value on error.
- *
- * Assumptions/Limitations:
- *   none.
- *
- ****************************************************************************/
-
-static int gnss_setparams(int fd)
-{
+static int gnss_setparams(int fd) {
   int      ret = 0;
   uint32_t set_satellite;
   struct cxd56_gnss_ope_mode_param_s set_opemode;
 
-  /* Set the GNSS operation interval. */
-
-  set_opemode.mode     = 1;     /* Operation mode:Normal(default). */
-  set_opemode.cycle    = 1000;  /* Position notify cycle(msec step). */
+  //Set GNSS operation interval
+  set_opemode.mode     = 1;     //Normal(Default) operational mode
+  set_opemode.cycle    = 1000;  //Position notify cycle(ms step)
 
   ret = ioctl(fd, CXD56_GNSS_IOCTL_SET_OPE_MODE, (uint32_t)&set_opemode);
-  if (ret < 0)
-    {
-      printf("ioctl(CXD56_GNSS_IOCTL_SET_OPE_MODE) NG!!\n");
-      goto _err;
-    }
 
-  /* Set the type of satellite system used by GNSS. */
-
+  //Set satellite system type
   set_satellite = CXD56_GNSS_SAT_GPS | CXD56_GNSS_SAT_GLONASS;
-
   ret = ioctl(fd, CXD56_GNSS_IOCTL_SELECT_SATELLITE_SYSTEM, set_satellite);
-  if (ret < 0)
-    {
-      printf("ioctl(CXD56_GNSS_IOCTL_SELECT_SATELLITE_SYSTEM) NG!!\n");
-      goto _err;
-    }
-
-_err:
-  return ret;
 }
 
-/****************************************************************************
- * Name: gnss_main()
- *
- * Description:
- *   Set parameters and run positioning.
- *
- * Input Parameters:
- *   argc - Does not use.
- *   argv - Does not use.
- *
- * Returned Value:
- *   Zero (OK) on success; Negative value on error.
- *
- * Assumptions/Limitations:
- *   none.
- *
- ****************************************************************************/
 
 int main(int argc, FAR char *argv[])
 {
-  int      fd;
-  int      ret;
-  int      posperiod;
+  int      fd, ret, posperiod;
   sigset_t mask;
   struct cxd56_gnss_signal_setting_s setting;
-
-  /* Program start. */
-
+  
   printf("Hello, GNSS(USE_SIGNAL) SAMPLE!!\n");
-
-  /* Get file descriptor to control GNSS. */
-
   fd = open("/dev/gps", O_RDONLY);
-  if (fd < 0)
-    {
-      printf("open error:%d,%d\n", fd, errno);
-      return -ENODEV;
-    }
 
-  /* Configure mask to notify GNSS signal. */
-
+  //Mask configuration for GNSS signal
   sigemptyset(&mask);
   sigaddset(&mask, MY_GNSS_SIG);
   ret = sigprocmask(SIG_BLOCK, &mask, NULL);
-  if (ret != OK)
-    {
-      printf("sigprocmask failed. %d\n", ret);
-      goto _err;
-    }
-
-  /* Set the signal to notify GNSS events. */
-
+  
+  //Signal notifies GNSS events
   setting.fd      = fd;
   setting.enable  = 1;
   setting.gnsssig = CXD56_GNSS_SIG_GNSS;
@@ -194,40 +107,18 @@ int main(int argc, FAR char *argv[])
   setting.data    = NULL;
 
   ret = ioctl(fd, CXD56_GNSS_IOCTL_SIGNAL_SET, (unsigned long)&setting);
-  if (ret < 0)
-    {
-      printf("signal error\n");
-      goto _err;
-    }
 
-  /* Set GNSS parameters. */
-
+  //Set GNSS parameters
   ret = gnss_setparams(fd);
-  if (ret != OK)
-    {
-      printf("gnss_setparams failed. %d\n", ret);
-      goto _err;
-    }
-
-  /* Initial positioning measurement becomes cold start if specified hot
-   * start, so working period should be long term to receive ephemeris. */
-
+  
+  //Cold vs Hot start - Ephemeris
   posperiod  = 200;
   posfixflag = 0;
-
-  /* Start GNSS. */
-
+  
+  //GNSS start
   ret = ioctl(fd, CXD56_GNSS_IOCTL_START, CXD56_GNSS_STMOD_HOT);
-  if (ret < 0)
-    {
-      printf("start GNSS ERROR %d\n", errno);
-      goto _err;
-    }
-  else
-    {
-      printf("start GNSS OK\n");
-    }
-
+  printf("start GNSS OK\n");
+  
   do
     {
       /* Wait for positioning to be fixed. After fixed,
