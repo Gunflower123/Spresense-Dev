@@ -119,69 +119,33 @@ int main(int argc, FAR char *argv[])
   ret = ioctl(fd, CXD56_GNSS_IOCTL_START, CXD56_GNSS_STMOD_HOT);
   printf("start GNSS OK\n");
   
-  do
-    {
-      /* Wait for positioning to be fixed. After fixed,
-       * idle for the specified seconds. */
-
-      ret = sigwaitinfo(&mask, NULL);
-      if (ret != MY_GNSS_SIG)
-        {
-          printf("sigwaitinfo error %d\n", ret);
-          break;
-        }
-
-      /* Read and print POS data. */
-
-      ret = read_and_print(fd);
-      if (ret < 0)
-        {
-          break;
-        }
-
-      if (posfixflag)
-        {
-          /* Count down started after POS fixed. */
-
-          posperiod--;
-        }
+  do {
+    ret = sigwaitinfo(&mask, NULL);
+    if (ret != MY_GNSS_SIG) {
+      printf("sigwaitinfo error %d\n", ret);
+      break;
     }
-  while (posperiod > 0);
-
-  /* Stop GNSS. */
-
+    
+    /* Read and print POS data. */
+    ret = read_and_print(fd);
+    if (ret < 0)
+      break;
+    if (posfixflag)
+      //Countdown after POS fixed
+      posperiod--;
+  } while(posperiod > 0);
+  
+  //Stop GNSS
   ret = ioctl(fd, CXD56_GNSS_IOCTL_STOP, 0);
-  if (ret < 0)
-    {
-      printf("stop GNSS ERROR\n");
-    }
-  else
-    {
-      printf("stop GNSS OK\n");
-    }
+  printf("stop GNSS OK\n");
 
-_err:
-
-  /* GNSS firmware needs to disable the signal after positioning. */
-
+  //GNSS firmware disable signal after positioning
   setting.enable = 0;
   ret = ioctl(fd, CXD56_GNSS_IOCTL_SIGNAL_SET, (unsigned long)&setting);
-  if (ret < 0)
-    {
-      printf("signal error\n");
-    }
-
   sigprocmask(SIG_UNBLOCK, &mask, NULL);
 
-  /* Release GNSS file descriptor. */
-
+  //Release GNSS fd
   ret = close(fd);
-  if (ret < 0)
-    {
-      printf("close error %d\n", errno);
-    }
-
   printf("End of GNSS Sample:%d\n", ret);
-
   return ret;
 }
