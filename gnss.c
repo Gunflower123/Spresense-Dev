@@ -23,8 +23,8 @@ static uint32_t posfixflag;
 static struct cxd56_gnss_positiondata_s posdat;
 
 static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf) {
-  int b,d,m;
-  double f,t;
+  int b;
+  double t;
 
   if (x < 0) {
       b = 1;
@@ -33,15 +33,11 @@ static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf) {
   else
     b = 0;
   
-  d = (int)x; /* = floor(x), x is always positive */
-  t = (x - d) * 60;
-  m = (int)t; /* = floor(t), t is always positive */
-  f = (t - m) * 10000;
-
+  t = (x-(int)x) * 60;
   dmf->sign   = b;
-  dmf->degree = d;
-  dmf->minute = m;
-  dmf->frac   = f;
+  dmf->degree = (int)x; //floor(x)
+  dmf->minute = (int)t; //floor(t)
+  dmf->frac   = (t-(int)t)*10000;
 }
 
 static int read_and_print(int f){
@@ -58,10 +54,10 @@ static int read_and_print(int f){
   if (posdat.receiver.pos_fixmode != CXD56_GNSS_PVT_POSFIX_INVALID) {
     posfixflag = 1;
     double_to_dmf(posdat.receiver.latitude, &dmf);
-    printf(">LAT %d.%d.%04ld\n", dmf.degree, dmf.minute, dmf.frac);
+    //printf(">LAT %d.%d.%04ld\n", dmf.degree, dmf.minute, dmf.frac);
     
     double_to_dmf(posdat.receiver.longitude, &dmf);
-    printf(">LNG %d.%d.%04ld\n", dmf.degree, dmf.minute, dmf.frac);
+    //printf(">LNG %d.%d.%04ld\n", dmf.degree, dmf.minute, dmf.frac);
   }
   else
     printf(">No Positioning Data\n");
@@ -84,13 +80,11 @@ static int gnss_setparams(int fd) {
 }
 
 
-int main(int argc, FAR char *argv[])
-{
+int main(int argc, FAR char *argv[]) {
   int  fd, ret, posperiod;
   sigset_t mask;
   struct cxd56_gnss_signal_setting_s setting;
   
-  printf("Hello, GNSS(USE_SIGNAL) SAMPLE!!\n");
   fd = open("/dev/gps", O_RDONLY);
 
   //Mask configuration for GNSS signal
