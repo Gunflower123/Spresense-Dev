@@ -13,3 +13,7 @@ tools/mkappsdir.py myapps "My Apps"
 tools/mkcmd.py -d myapps myfirstapp "My first app example"
 ```
 
+# Links
+`https://github.com/sonydevworld/spresense-nuttx/blob/new-master/boards/arm/cxd56xx/spresense/include/cxd56_power.h`
+`https://github.com/sonydevworld/spresense-nuttx/blob/new-master/boards/arm/cxd56xx/spresense/include/cxd56_gpioif.h`
+
