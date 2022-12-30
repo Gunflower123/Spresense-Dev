@@ -2,7 +2,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-//#include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -24,7 +23,7 @@ static uint32_t posfixflag;
 static struct cxd56_gnss_positiondata_s posdat;
 
 static void double_to_dmf(double x, struct cxd56_gnss_dms_s * dmf) {
-  int    b,d,m;
+  int b,d,m;
   double f,t;
 
   if (x < 0) {
