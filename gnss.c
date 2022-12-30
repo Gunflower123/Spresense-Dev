@@ -87,7 +87,7 @@ static int gnss_setparams(int fd) {
 
 int main(int argc, FAR char *argv[])
 {
-  int      fd, ret, posperiod;
+  int  fd, ret, posperiod;
   sigset_t mask;
   struct cxd56_gnss_signal_setting_s setting;
   
@@ -126,7 +126,6 @@ int main(int argc, FAR char *argv[])
       break;
     }
     
-    /* Read and print POS data. */
     ret = read_and_print(fd);
     if (ret < 0)
       break;
